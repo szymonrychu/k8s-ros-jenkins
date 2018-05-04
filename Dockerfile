@@ -18,6 +18,10 @@ RUN /usr/local/bin/install-plugins.sh simple-theme-plugin
 # Scaling
 RUN /usr/local/bin/install-plugins.sh kubernetes
 
+ADD https://storage.googleapis.com/kubernetes-release/release/v1.10.0/bin/linux/amd64/kubectl /usr/local/bin/kubectl
+RUN chmod +x /usr/local/bin/kubectl
+
+
 # install Maven
 USER root
 RUN apt-get update && apt-get install -y maven
