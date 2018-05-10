@@ -5,14 +5,32 @@ import com.cloudbees.plugins.credentials.SystemCredentialsProvider
 import com.cloudbees.plugins.credentials.domains.Domain
 import hudson.util.Secret
 import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl
+import hudson.security.*
 
 
 
 def jenkins = Jenkins.getInstance()
 def environmentalVariables = System.getenv()
-String jenkins_user_secret = environmentalVariables["JENKINS_USER_SECRET"]
-String jenkinsnode_image = environmentalVariables["JENKINSNODE_IMAGE"]
-
+if(filter.containsKey("JENKINS_USER_SECRET")){
+  String jenkins_user_secret = environmentalVariables["JENKINS_USER_SECRET"]
+}else{
+  String jenkins_user_secret = "no_secret_provided"
+}
+if(filter.containsKey("JENKINSNODE_IMAGE")){
+  String jenkinsnode_image = environmentalVariables["JENKINSNODE_IMAGE"]
+}else{
+  String jenkinsnode_image = "jenkinsci/jnlp-slave"
+}
+if(filter.containsKey("JENKINS_ADMIN_USERNAME")){
+  String jenkins_admin_username = environmentalVariables["JENKINS_ADMIN_USERNAME"]
+}else{
+  String jenkins_admin_username = "admin"
+}
+if(filter.containsKey("JENKINS_ADMIN_PASSWORD")){
+  String jenkins_admin_password = environmentalVariables["JENKINS_ADMIN_PASSWORD"]
+}else{
+  String jenkins_admin_password = "*Passw0rd123!"
+}
 // obtain jenkins private ip address
 
 def localIp = InetAddress.localHost.canonicalHostName
@@ -85,5 +103,16 @@ kubernetesCloud.setCredentialsId('kubernetes-admin')
 jenkins.clouds.replace(kubernetesCloud)
 
 
+def hudsonRealm = new HudsonPrivateSecurityRealm(false)
+hudsonRealm.createAccount(jenkins_admin_username, jenkins_admin_password)
+jenkins.setSecurityRealm(hudsonRealm)
+def strategy = new hudson.security.GlobalMatrixAuthorizationStrategy()
+strategy.add(Jenkins.ADMINISTER, jenkins_admin_username)
+jenkins.setAuthorizationStrategy(strategy)
 
+user = hudson.model.User.get(jenkins_admin_username)
+prop = user.getProperty(jenkins.security.ApiTokenProperty.class)
+println(prop.getApiToken())
+
+jenkins.setNumExecutors(0)
 jenkins.save()
