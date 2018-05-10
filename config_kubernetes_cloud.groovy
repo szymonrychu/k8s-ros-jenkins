@@ -6,6 +6,8 @@ import com.cloudbees.plugins.credentials.domains.Domain
 import hudson.util.Secret
 import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl
 
+
+
 def jenkins = Jenkins.getInstance()
 def environmentalVariables = System.getenv()
 String jenkins_user_secret = environmentalVariables["JENKINS_USER_SECRET"]
@@ -60,10 +62,11 @@ setStringCredentialsImpl('kubernetes-admin', '', jenkins_user_secret)
 List<ContainerTemplate> containerTemplates = [
   new ContainerTemplate('jnlp', jenkinsnode_image, 'jenkins-slave', '')
 ]
-def podTemplate = new PodTemplate('jenkins-worker', containerTemplates)
+def podTemplate = new PodTemplate('jenkins-worker', null)
 podTemplate.setName('jenkins-worker')
 podTemplate.setNamespace('default')
 podTemplate.setLabel('jenkins-worker')
+podTemplate.setContainers(containerTemplates)
 
 List<PodTemplate> podTemplates = [
   podTemplate
@@ -80,4 +83,7 @@ kubernetesCloud.setSkipTlsVerify(true)
 kubernetesCloud.setCredentialsId('kubernetes-admin')
 
 jenkins.clouds.replace(kubernetesCloud)
+
+
+
 jenkins.save()
