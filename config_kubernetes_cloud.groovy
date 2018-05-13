@@ -51,7 +51,7 @@ def setStringCredentialsImpl(String credentials_id, String description, String s
 // get master objects
 def jenkins = Jenkins.getInstance()
 def environmentalVariables = System.getenv()
-def localIp = InetAddress.localHost.canonicalHostName
+def localIp = InetAddress.localHost.hostAddress
 // set variables based on env
 String jenkins_admin_username = "admin"
 String jenkins_admin_password = "*Passw0rd123!"
