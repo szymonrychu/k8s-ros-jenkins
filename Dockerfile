@@ -5,6 +5,7 @@ RUN /usr/local/bin/install-plugins.sh ssh-slaves
 RUN /usr/local/bin/install-plugins.sh kubernetes
 RUN /usr/local/bin/install-plugins.sh locale
 RUN /usr/local/bin/install-plugins.sh blueocean
+RUN /usr/local/bin/install-plugins.sh matrix-auth
 
 
 
