@@ -8,6 +8,7 @@ RUN /usr/local/bin/install-plugins.sh blueocean
 RUN /usr/local/bin/install-plugins.sh matrix-auth
 RUN /usr/local/bin/install-plugins.sh timestamper
 RUN /usr/local/bin/install-plugins.sh ansicolor
+RUN /usr/local/bin/install-plugins.sh build-user-vars-plugin
 
 USER root
 ADD https://storage.googleapis.com/kubernetes-release/release/v1.10.0/bin/linux/amd64/kubectl /usr/local/bin/kubectl
