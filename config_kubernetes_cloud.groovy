@@ -78,7 +78,7 @@ def createMultibranchPipeline(String folderName, String projectName, String gitR
   }
 
   // Configure the script this MBP uses
-  mbp.getProjectFactory().setScriptPath('Jenkins')
+  mbp.getProjectFactory().setScriptPath('Jenkinsfile')
 
   // Add git repo
   String id = null
