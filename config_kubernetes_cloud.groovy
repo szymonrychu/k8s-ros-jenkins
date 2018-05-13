@@ -112,6 +112,7 @@ jenkins.save()
 jenkins.setNumExecutors(0)
 
 
+// prepare k8s-ros-jenkins job
 def scm = new GitSCM("https://github.com/szymonrychu/k8s-ros-jenkins")
 scm.branches = [
   new BranchSpec('') // empty for all branches
@@ -119,6 +120,25 @@ scm.branches = [
 def flowDefinition = new org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition(scm, "Jenkinsfile")
 def job = new org.jenkinsci.plugins.workflow.job.WorkflowJob(jenkins, "[DockerPipeline] Jenkins")
 job.definition = flowDefinition
+// prepare k8s-ros-jenkinsnode job
+def scm = new GitSCM("https://github.com/szymonrychu/k8s-ros-jenkinsnode")
+scm.branches = [
+  new BranchSpec('') // empty for all branches
+];
+def flowDefinition = new org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition(scm, "Jenkinsfile")
+def job = new org.jenkinsci.plugins.workflow.job.WorkflowJob(jenkins, "[DockerPipeline] Jenkins Node")
+job.definition = flowDefinition
+// prepare k8s-ros-master job
+def scm = new GitSCM("https://github.com/szymonrychu/k8s-ros-master")
+scm.branches = [
+  new BranchSpec('') // empty for all branches
+];
+def flowDefinition = new org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition(scm, "Jenkinsfile")
+def job = new org.jenkinsci.plugins.workflow.job.WorkflowJob(jenkins, "[DockerPipeline] ROS master")
+job.definition = flowDefinition
+
+
+
 // save config
 jenkins.reload()
 jenkins.save()
