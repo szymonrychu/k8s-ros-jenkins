@@ -3,10 +3,12 @@ import jenkins.model.*
 import com.cloudbees.plugins.credentials.CredentialsScope
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider
 import com.cloudbees.plugins.credentials.domains.Domain
+import org.csanchez.jenkins.plugins.kubernetes.volumes.PodVolume
 import hudson.util.Secret
 import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl
 import hudson.security.*
 import hudson.plugins.git.*
+import java.util.ArrayList
 
 // functions
 def addCredential(String credentials_id, def credential) {
@@ -53,7 +55,7 @@ def localIp = InetAddress.localHost.canonicalHostName
 // set variables based on env
 String jenkins_admin_username = "admin"
 String jenkins_admin_password = "*Passw0rd123!"
-String jenkins_k8s_secret = "Password123!"
+String jenkins_k8s_secret = "jenkins_secret"
 String jenkinsnode_image = "jenkinsci/jnlp-slave"
 if(environmentalVariables.containsKey("JENKINS_USER_SECRET")){
   jenkins_k8s_secret = environmentalVariables["JENKINS_USER_SECRET"]
@@ -79,19 +81,10 @@ prop = user.getProperty(jenkins.security.ApiTokenProperty.class)
 // prepare jenkins credentials with api-key
 setStringCredentialsImpl('kubernetes-admin', '', jenkins_k8s_secret)
 // prepare kubernetes cloud
-List<ContainerTemplate> containerTemplates = [
-  new ContainerTemplate('jnlp', jenkinsnode_image, 'jenkins-slave', '')
-]
-def podTemplate = new PodTemplate('jenkins-worker', containerTemplates)
-podTemplate.setName('jenkins-worker')
-podTemplate.setNamespace('default')
-podTemplate.setLabel('jenkins-worker')
-List<PodTemplate> podTemplates = [
-  podTemplate
-]
+
 def kubernetesCloud = new KubernetesCloud(
   'kubernetes',
-  podTemplates,
+  new ArrayList<PodTemplate>(),
   'https://kubernetes',
   'default',
   "http://jenkins:8080".toString(),
@@ -99,14 +92,29 @@ def kubernetesCloud = new KubernetesCloud(
 )
 kubernetesCloud.setSkipTlsVerify(true)
 kubernetesCloud.setCredentialsId('kubernetes-admin')
+
+
+podTemplate = new PodTemplate(jenkinsnode_image, new ArrayList<PodVolume>())
+
+List<ContainerTemplate> containerTemplates = [
+  new ContainerTemplate('jnlp', jenkinsnode_image, 'jenkins-slave', '')
+]
+podTemplate = new PodTemplate(jenkinsnode_image, new ArrayList<PodVolume>())
+podTemplate.setName('jenkins-worker')
+podTemplate.setNamespace('default')
+podTemplate.setLabel('jenkins-worker')
+podTemplate.setContainers(containerTemplates)
+
+kubernetesCloud.addTemplate(podTemplate)
 jenkins.clouds.replace(kubernetesCloud)
+jenkins.save()
 // set jenkins number od executors
 jenkins.setNumExecutors(0)
 
 
 def scm = new GitSCM("https://github.com/szymonrychu/k8s-ros-jenkins")
 scm.branches = [
-  new BranchSpec("*")
+  new BranchSpec('') // empty for all branches
 ];
 def flowDefinition = new org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition(scm, "Jenkinsfile")
 def job = new org.jenkinsci.plugins.workflow.job.WorkflowJob(jenkins, "[DockerPipeline] Jenkins")
