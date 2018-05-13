@@ -113,29 +113,26 @@ jenkins.setNumExecutors(0)
 
 
 // prepare k8s-ros-jenkins job
-def scm = new GitSCM("https://github.com/szymonrychu/k8s-ros-jenkins")
-scm.branches = [
+def scmJenkins = new GitSCM("https://github.com/szymonrychu/k8s-ros-jenkins")
+scmJenkins.branches = [
   new BranchSpec('') // empty for all branches
 ];
-def flowDefinition = new org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition(scm, "Jenkinsfile")
-def job = new org.jenkinsci.plugins.workflow.job.WorkflowJob(jenkins, "[DockerPipeline] Jenkins")
-job.definition = flowDefinition
+def jobJenkins = new org.jenkinsci.plugins.workflow.job.WorkflowJob(jenkins, "[DockerPipeline] Jenkins")
+jobJenkins.definition = new org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition(scmJenkins, "Jenkinsfile")
 // prepare k8s-ros-jenkinsnode job
-def scm = new GitSCM("https://github.com/szymonrychu/k8s-ros-jenkinsnode")
-scm.branches = [
+def scmJenkinsnode = new GitSCM("https://github.com/szymonrychu/k8s-ros-jenkinsnode")
+scmJenkinsnode.branches = [
   new BranchSpec('') // empty for all branches
 ];
-def flowDefinition = new org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition(scm, "Jenkinsfile")
-def job = new org.jenkinsci.plugins.workflow.job.WorkflowJob(jenkins, "[DockerPipeline] Jenkins Node")
-job.definition = flowDefinition
+def jobJenkinsnode = new org.jenkinsci.plugins.workflow.job.WorkflowJob(jenkins, "[DockerPipeline] Jenkins Node")
+jobJenkinsnode.definition = new org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition(scmJenkinsnode, "Jenkinsfile")
 // prepare k8s-ros-master job
-def scm = new GitSCM("https://github.com/szymonrychu/k8s-ros-master")
-scm.branches = [
+def scmRosMaster = new GitSCM("https://github.com/szymonrychu/k8s-ros-master")
+scmRosMaster.branches = [
   new BranchSpec('') // empty for all branches
 ];
-def flowDefinition = new org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition(scm, "Jenkinsfile")
-def job = new org.jenkinsci.plugins.workflow.job.WorkflowJob(jenkins, "[DockerPipeline] ROS master")
-job.definition = flowDefinition
+def jobRosMaster = new org.jenkinsci.plugins.workflow.job.WorkflowJob(jenkins, "[DockerPipeline] ROS master")
+jobRosMaster.definition = new org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition(scmRosMaster, "Jenkinsfile")
 
 
 
