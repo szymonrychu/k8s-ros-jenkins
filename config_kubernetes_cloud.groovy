@@ -5,12 +5,13 @@ import jenkins.model.*
 import jenkins.branch.*
 import jenkins.plugins.git.*
 import org.csanchez.jenkins.plugins.kubernetes.*
-import com.cloudbees.plugins.credentials.*
-import com.cloudbees.plugins.credentials.domains.*
 import org.csanchez.jenkins.plugins.kubernetes.volumes.PodVolume
 import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl
 import org.jenkinsci.plugins.workflow.multibranch.*
+import com.cloudbees.plugins.credentials.*
+import com.cloudbees.plugins.credentials.domains.*
 import com.cloudbees.hudson.plugins.folder.*
+import com.cloudbees.hudson.plugins.folder.computed.*
 
 import java.util.ArrayList
 
@@ -88,17 +89,15 @@ def createMultibranchPipeline(String folderName, String projectName, String gitR
   GitSCMSource gitSCMSource = new GitSCMSource(id, remote, credentialsId, includes, excludes, ignoreOnPushNotifications)
   BranchSource branchSource = new BranchSource(gitSCMSource)
 
-  // Disable triggering build
-  NoTriggerBranchProperty noTriggerBranchProperty = new NoTriggerBranchProperty()
-
-  // Can be used later to not trigger/trigger some set of branches
-  //NamedExceptionsBranchPropertyStrategy.Named nebrs_n = new NamedExceptionsBranchPropertyStrategy.Named("change-this", noTriggerBranchProperty)
-
-  BranchProperty[] bpa = [noTriggerBranchProperty]
-  NamedExceptionsBranchPropertyStrategy nebps = new NamedExceptionsBranchPropertyStrategy(bpa, nebpsa)
-
-  branchSource.setStrategy(nebps)
-  branchSource.addTrigger(new PeriodicFolderTrigger("1m"));
+  // for (var f in Jenkins.instance.getAllItems(jenkins.branch.MultiBranchProject.class) {
+  //   if (f.parent instanceof jenkins.branch.OrganizationFolder) {
+  //     // managed by org folder, leave alone
+  //     continue;
+  //   }
+  //   // addTrigger will replace an existing one
+  //   f.addTrigger(new com.cloudbees.hudson.plugins.folder.computedPeriodicFolderTrigger("1d"));
+  // }
+  mbp.addTrigger(new PeriodicFolderTrigger("1m"));
 
   // Remove and replace?
   PersistedList sources = mbp.getSourcesList()
