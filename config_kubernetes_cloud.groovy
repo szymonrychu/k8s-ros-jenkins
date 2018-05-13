@@ -87,7 +87,7 @@ def kubernetesCloud = new KubernetesCloud(
   new ArrayList<PodTemplate>(),
   'https://kubernetes',
   'default',
-  "http://jenkins:8080".toString(),
+  "http://${localIp}:8080".toString(),
   '10', 60, 0, 5
 )
 kubernetesCloud.setSkipTlsVerify(true)
