@@ -6,6 +6,7 @@ import com.cloudbees.plugins.credentials.domains.Domain
 import hudson.util.Secret
 import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl
 import hudson.security.*
+import hudson.plugins.git.*
 
 // functions
 def addCredential(String credentials_id, def credential) {
@@ -101,5 +102,15 @@ kubernetesCloud.setCredentialsId('kubernetes-admin')
 jenkins.clouds.replace(kubernetesCloud)
 // set jenkins number od executors
 jenkins.setNumExecutors(0)
+
+
+def scm = new GitSCM("https://github.com/szymonrychu/k8s-ros-jenkins")
+scm.branches = [
+  new BranchSpec("*")
+];
+def flowDefinition = new org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition(scm, "Jenkinsfile")
+def job = new org.jenkinsci.plugins.workflow.job.WorkflowJob(jenkins, "[DockerPipeline] Jenkins")
+job.definition = flowDefinition
 // save config
+jenkins.reload()
 jenkins.save()
