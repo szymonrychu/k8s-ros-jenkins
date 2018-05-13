@@ -1,14 +1,23 @@
-import org.csanchez.jenkins.plugins.kubernetes.*
-import jenkins.model.*
-import com.cloudbees.plugins.credentials.CredentialsScope
-import com.cloudbees.plugins.credentials.SystemCredentialsProvider
-import com.cloudbees.plugins.credentials.domains.Domain
-import org.csanchez.jenkins.plugins.kubernetes.volumes.PodVolume
-import hudson.util.Secret
-import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl
+import hudson.util.*
+import hudson.model.*
 import hudson.security.*
-import hudson.plugins.git.*
+import jenkins.model.*
+import jenkins.branch.*
+import jenkins.plugins.git.*
+import org.csanchez.jenkins.plugins.kubernetes.*
+import com.cloudbees.plugins.credentials.*
+import com.cloudbees.plugins.credentials.domains.*
+import org.csanchez.jenkins.plugins.kubernetes.volumes.PodVolume
+import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl
+import org.jenkinsci.plugins.workflow.multibranch.*
+import com.cloudbees.hudson.plugins.folder.*
+
 import java.util.ArrayList
+
+// get master objects
+jenkins = Jenkins.getInstance()
+environmentalVariables = System.getenv()
+localIp = InetAddress.localHost.hostAddress
 
 // functions
 def addCredential(String credentials_id, def credential) {
@@ -48,10 +57,54 @@ def setStringCredentialsImpl(String credentials_id, String description, String s
                 Secret.fromString(secret))
             )
 }
-// get master objects
-def jenkins = Jenkins.getInstance()
-def environmentalVariables = System.getenv()
-def localIp = InetAddress.localHost.hostAddress
+def createMultibranchPipeline(String folderName, String projectName, String gitRepo, String gitRepoName, String credentialsId){
+  // Get the folder where this job should be
+  def folder = jenkins.getItem(folderName)
+  // Create the folder if it doesn't exist
+  if (folder == null) {
+    folder = jenkins.createProject(Folder.class, folderName)
+  }
+
+  // Multibranch creation/update
+  WorkflowMultiBranchProject mbp
+  Item item = folder.getItem(projectName)
+  if ( item != null ) {
+    // Update case
+    mbp = (WorkflowMultiBranchProject) item
+  } else {
+    // Create case
+    mbp = folder.createProject(WorkflowMultiBranchProject.class, projectName)
+  }
+
+  // Configure the script this MBP uses
+  mbp.getProjectFactory().setScriptPath('Jenkins')
+
+  // Add git repo
+  String id = null
+  String remote = gitRepo
+  String includes = "*"
+  String excludes = ""
+  boolean ignoreOnPushNotifications = false
+  GitSCMSource gitSCMSource = new GitSCMSource(id, remote, credentialsId, includes, excludes, ignoreOnPushNotifications)
+  BranchSource branchSource = new BranchSource(gitSCMSource)
+
+  // Disable triggering build
+  NoTriggerBranchProperty noTriggerBranchProperty = new NoTriggerBranchProperty()
+
+  // Can be used later to not trigger/trigger some set of branches
+  //NamedExceptionsBranchPropertyStrategy.Named nebrs_n = new NamedExceptionsBranchPropertyStrategy.Named("change-this", noTriggerBranchProperty)
+
+  BranchProperty[] bpa = [noTriggerBranchProperty]
+  NamedExceptionsBranchPropertyStrategy nebps = new NamedExceptionsBranchPropertyStrategy(bpa, nebpsa)
+
+  branchSource.setStrategy(nebps)
+  branchSource.addTrigger(new PeriodicFolderTrigger("1m"));
+
+  // Remove and replace?
+  PersistedList sources = mbp.getSourcesList()
+  sources.clear()
+  sources.add(branchSource)
+}
 // set variables based on env
 String jenkins_admin_username = "admin"
 String jenkins_admin_password = "*Passw0rd123!"
@@ -112,29 +165,27 @@ jenkins.save()
 jenkins.setNumExecutors(0)
 
 
-// prepare k8s-ros-jenkins job
-def scmJenkins = new GitSCM("https://github.com/szymonrychu/k8s-ros-jenkins")
-scmJenkins.branches = [
-  new BranchSpec('') // empty for all branches
-];
-def jobJenkins = new org.jenkinsci.plugins.workflow.job.WorkflowJob(jenkins, "[DockerPipeline] Jenkins")
-jobJenkins.definition = new org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition(scmJenkins, "Jenkinsfile")
-// prepare k8s-ros-jenkinsnode job
-def scmJenkinsnode = new GitSCM("https://github.com/szymonrychu/k8s-ros-jenkinsnode")
-scmJenkinsnode.branches = [
-  new BranchSpec('') // empty for all branches
-];
-def jobJenkinsnode = new org.jenkinsci.plugins.workflow.job.WorkflowJob(jenkins, "[DockerPipeline] Jenkins Node")
-jobJenkinsnode.definition = new org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition(scmJenkinsnode, "Jenkinsfile")
-// prepare k8s-ros-master job
-def scmRosMaster = new GitSCM("https://github.com/szymonrychu/k8s-ros-master")
-scmRosMaster.branches = [
-  new BranchSpec('') // empty for all branches
-];
-def jobRosMaster = new org.jenkinsci.plugins.workflow.job.WorkflowJob(jenkins, "[DockerPipeline] ROS master")
-jobRosMaster.definition = new org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition(scmRosMaster, "Jenkinsfile")
 
 
+
+
+
+
+createMultibranchPipeline('Docker Pipelines',
+  'Jenkins',
+  'https://github.com/szymonrychu/k8s-ros-jenkins',
+  'docker_source', null
+)
+createMultibranchPipeline('Docker Pipelines',
+  'Jenkinsnode',
+  'https://github.com/szymonrychu/k8s-ros-jenkinsnode',
+  'docker_source', null
+)
+createMultibranchPipeline('Docker Pipelines',
+  'ROS master',
+  'https://github.com/szymonrychu/k8s-ros-master',
+  'docker_source', null
+)
 
 // save config
 jenkins.reload()
